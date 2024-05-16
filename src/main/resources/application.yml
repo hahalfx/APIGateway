@@ -1,0 +1,26 @@
+server:
+  port: 8001
+
+eureka:
+  client:
+    service-url:
+      defaultZone: <http://localhost:8761/eureka/>
+  instance:
+    prefer-ip-address: true
+
+spring:
+  application:
+    name: APIGateway
+  cloud:
+    gateway:
+      routes:
+      #实现访问http://localhost:8080/users/，请求会被路由到user-service。
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/users/**
+        #实现访问http://localhost:8080/notifications/，请求会被路由到notification-service。   
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/notifications/**
