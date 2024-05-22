@@ -8,19 +8,20 @@ eureka:
   instance:
     prefer-ip-address: true
 
+#使用动态路由配置
 spring:
   application:
     name: APIGateway
   cloud:
     gateway:
-      routes:
-      #实现访问http://localhost:8080/users/，请求会被路由到user-service。
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/users/**
-        #实现访问http://localhost:8080/notifications/，请求会被路由到notification-service。   
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/notifications/**
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/oauth2/default  # 根据您的OAuth2提供者配置
