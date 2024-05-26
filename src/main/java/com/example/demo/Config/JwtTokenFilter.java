@@ -14,6 +14,7 @@ public class JwtTokenFilter extends AbstractGatewayFilterFactory<JwtTokenFilter.
     }
 
     //定义过滤器的行为，接受一个 Config 类型的参数，并返回一个 GatewayFilter 对象
+    
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
