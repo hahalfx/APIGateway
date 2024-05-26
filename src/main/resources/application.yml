@@ -1,6 +1,23 @@
+#服务接口为8001
 server:
   port: 8001
 
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user_service #路由ID
+          uri: lb://USER-SERVICE #请求的目标服务，通过Eureka服务发现，路由到名为USER-SERVICE的微服务
+          predicates:
+            - Path=/api/auth/**
+            #如果请求路径匹配/api/auth/**，则该请求将被路由到USER-SERVICE
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /${segment}
+            #RewritePath过滤器将请求路径从/api/auth/...重写为/...。
+            #例如，请求/api/auth/login将被重写为/login，然后转发到用户管理微服务。
+
+#要使用eureka来发现微服务然后进行动态路由
+#eureka服务的服务端在<http://localhost:8761/eureka/>
 eureka:
   client:
     service-url:
@@ -8,7 +25,7 @@ eureka:
   instance:
     prefer-ip-address: true
 
-#使用动态路由配置
+#使用eureka进行动态路由配置
 spring:
   application:
     name: APIGateway
@@ -19,9 +36,32 @@ spring:
           enabled: true
           lower-case-service-id: true
 
+#使用OAuth2进行token安全配置
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8080/oauth2/default  # 根据您的OAuth2提供者配置
+
+#配置Redis
+spring:
+  redis:
+    host: localhost
+    port: 6379
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/oauth2/default
+
+# 配置CORS过滤器
+cors:
+  mappings:
+    /**:
+      allowed-origins: "http://localhost:3000"
+      allowed-methods: "*"
+      allowed-headers: "*"
+      allow-credentials: true
