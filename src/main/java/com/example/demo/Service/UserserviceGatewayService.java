@@ -9,17 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.demo.Feign.NotificationServiceClient;
 import com.example.demo.Feign.UserServiceClient;
 
 @Service
-public class GatewayService {
+public class UserserviceGatewayService {
 
     @Autowired
     private UserServiceClient userServiceClient;
-
-    @Autowired
-    private NotificationServiceClient notificationServiceClient;
 
     public boolean addUser(User user){
         return userServiceClient.addUser(user);
@@ -39,9 +35,5 @@ public class GatewayService {
 
     public List<UserWithBLOBs> findAll(){
         return userServiceClient.findAll();
-    }
-
-    public String getNotificationServiceData() {
-        return notificationServiceClient.getNotifications();
     }
 }

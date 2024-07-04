@@ -10,20 +10,31 @@ APIGateway/
 │   │   │   └── com/
 │   │   │       └── example/
 │   │   │           └── demo/
+│   │   │               ├── Common/
+│   │   │               │   ├── enums/
+│   │   │                   │   ├──ResultCodeEnum.java
+│   │   │               │   ├── Result.java                    # 响应结果的模版
 │   │   │               ├── Config/
-│   │   │               │   ├── AppConfig.java                 # App配置
+│   │   │               │   ├── RestTemplateConfig.java        # RestTemplate配置
 │   │   │               │   ├── JwtTokenFilter.java            # 一个自定义的过滤器
 │   │   │               │   ├── SecurityConfig.java            # 安全配置
 │   │   │               │   ├── RedisConfig.java               # Redis配置
 │   │   │               ├── Controller/
-│   │   │               │   ├── GatewayControl.java            # 网关处理微服务请求
+│   │   │               │   ├── MessageServiceGatewayControl.java         # 处理发来给网关的消息服务请求
+│   │   │               │   ├── UserServiceGatewayControl.java            # 处理发来给网关的用户管理服务请求
 │   │   │               │   ├── AuthController.java            # 登录,注册处理逻辑
+│   │   │               ├── entity/
+│   │   │               │   ├── MessageTask.java               # 消息模版实体
+│   │   │               │   ├── Notice.java                    # 消息通知实体
+│   │   │               │   ├── User.java                      # 用户实体
+│   │   │               │   ├── UserWithBLOBs.java             # 用户实体
 │   │   │               ├── Feign/
-│   │   │               │   ├── NotificationServiceClient.java # 与消息通告服务通信
+│   │   │               │   ├── MessageServiceClient.java      # 与消息通告服务通信
 │   │   │               │   ├── UserServiceClient.java         # 与用户管理服务通信
 │   │   │               ├── Service/
-│   │   │               │   ├── GatewayService.java            # 网关与微服务通信
-│   │   │               │   ├── PermissionService.java         # 权限存储服务
+│   │   │               │   ├── MessageserviceGatewayService.java          # 网关与消息通告服务交互的业务逻辑
+│   │   │               │   ├── UserserviceGatewayService.java             # 网关与用户管理服务交互的业务逻辑
+│   │   │               │   ├── PermissionService.java         # 鉴权服务的业务逻辑
 │   │   │               └── ApiGatewayApplication.java         # Spring Boot应用的入口类
 │   │   └── resources/
 │   │       ├── application.properties              
