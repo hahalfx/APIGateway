@@ -8,13 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient("message-service")
 public interface MessageServiceClient {
@@ -27,16 +21,58 @@ public interface MessageServiceClient {
     //NoticeController
     //公告信息表操作
     @PostMapping("/notice/add")
-    Result add(@RequestBody Notice notice);
+    Result addnotice(@RequestBody Notice notice);
 
     @DeleteMapping("/notice/delete/{id}")
-    Result deleteById(@PathVariable Integer id);
+    Result deletenoticeById(@PathVariable Integer id);
 
     @DeleteMapping("/notice/delete/batch")
-    Result deleteBatch(@RequestBody List<Integer> ids);
+    Result deletenoticeBatch(@RequestBody List<Integer> ids);
 
     @PutMapping("/notice/update")
-    Result updateById(@RequestBody Notice notice);
+    Result updatenoticeById(@RequestBody Notice notice);
 
+    @GetMapping("/notice/selectById/{id}")
+    Result selectnoticeById(@PathVariable Integer id);
+
+    @GetMapping("/notice/selectAll")
+    Result selectAllnotice(Notice notice );
+
+    @GetMapping("/notice/selectPage")
+    Result selectnoticePage(Notice notice,
+                             @RequestParam(defaultValue = "1") Integer pageNum,
+                             @RequestParam(defaultValue = "10") Integer pageSize);
+
+    //SMSController
+    @PostMapping("/sendSms")
+    ResponseEntity<String> sendSms(@RequestParam("mobile") String mobile);
+
+    //SMSPastController
+    @PostMapping("/sendSmsPASTUSELESS")
+    ResponseEntity<String> sendSms();
+
+    //TblMessageTpmController消息模版管理控制
+    @PostMapping("/tblMessageTpm/add")
+    Result addMessageTpm(@RequestBody TblMessageTpm tblMessageTpm);
+
+    @DeleteMapping("/tblMessageTpm/delete/{id}")
+    Result deleteMessageTpmById(@PathVariable Integer id);
+
+    @DeleteMapping("/tblMessageTpm/delete/batch")
+    Result deleteMessageTpmBatch(@RequestBody List<Integer> ids);
+
+    @PutMapping("/tblMessageTpm/update")
+    Result updateMessageTpmById(@RequestBody TblMessageTpm tblMessageTpm);
+
+    @GetMapping("/tblMessageTpm/selectById/{id}")
+    Result selectMessageTpmById(@PathVariable Integer id);
+
+     @GetMapping("/tblMessageTpm/selectAll")
+    Result selectallMessageTpm(TblMessageTpm tblMessageTpm);
+
+    @GetMapping("/tblMessageTpm/selectPage")
+    Result selectMessageTpmPage(TblMessageTpm tblMessageTpm, 
+        @RequestParam(defaultValue = "1") Integer pageNum,  
+        @RequestParam(defaultValue = "10") Integer pageSize);
 
 }

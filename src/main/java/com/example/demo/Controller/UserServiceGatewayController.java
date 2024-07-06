@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.Security.RequiredPermission;
 import com.example.demo.Service.UserserviceGatewayService;
 
 @RestController
@@ -33,6 +34,7 @@ public class UserServiceGatewayController {
         return userservicegatewayService.updateuSER(user);
     }
 
+    @RequiredPermission("ADMIN")
     @DeleteMapping("user/delete")
     public boolean deleteUser(String _userid) {
         return userservicegatewayService.deleteUser(_userid);

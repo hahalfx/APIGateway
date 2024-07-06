@@ -1,6 +1,11 @@
 package com.example.demo.Config;
 
+import com.example.demo.Security.RequiredPermission;
 import com.example.demo.Service.PermissionService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,7 +15,18 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.security.Key;
+import java.util.HashSet;
 import java.util.Set;
 
 @Configuration
@@ -18,47 +34,87 @@ import java.util.Set;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    //用于获取用户权限。
     @Autowired
     private PermissionService permissionService;
 
-    //配置安全过滤链
+    private static final String SECRET_KEY = "your-256-bit-secret";
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorizeRequests ->
                 authorizeRequests
-                    //允许所有对匹配 /api/public/** 的请求无需认证。
                     .requestMatchers("/api/public/**").permitAll()
-                    //所有其他请求都需要认证。
                     .anyRequest().authenticated()
-                    //自定义访问控制逻辑
-                    .access((authentication, request, configAttributes) -> {
-                        String userId = authentication.getName();
-                        String requestUri = request.getRequestURI();
-                        Set<String> permissions = permissionService.getUserPermissions(userId);
-                        //检查用户是否有权限访问请求的URI，如果有，允许访问；否则抛出 AccessDeniedException。
-                        if (permissions != null && permissions.contains(requestUri)) {
-                            return null; // 允许访问
-                        }
-                        throw new AccessDeniedException("Access Denied");
-                    })
             )
-            //配置JWT认证转换器。
+            .addFilterBefore(new OncePerRequestFilter() {
+                @Override
+                protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+                    String authorizationHeader = request.getHeader("Authorization");
+                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                        String token = authorizationHeader.substring(7);
+                        Set<String> permissions = extractPermissionsFromToken(token);
+                        String requestUri = request.getRequestURI();
+
+                        // 获取当前处理的方法
+                        Object handler = request.getAttribute("org.springframework.web.servlet.HandlerMapping.bestMatchingHandler");
+                        if (handler instanceof HandlerMethod) {
+                            HandlerMethod handlerMethod = (HandlerMethod) handler;
+                            Method method = handlerMethod.getMethod();
+
+                            // 检查方法上是否有 RequiredPermission 注解
+                            if (method.isAnnotationPresent(RequiredPermission.class)) {
+                                RequiredPermission requiredPermission = method.getAnnotation(RequiredPermission.class);
+                                String requiredPermissionValue = requiredPermission.value();
+                                
+                                // 验证用户是否拥有所需的权限
+                                if (!permissions.contains(requiredPermissionValue)) {
+                                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    filterChain.doFilter(request, response);
+                }
+            }, UsernamePasswordAuthenticationFilter.class)
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
-    
 
-    //配置JWT认证转换器。
+    private Set<String> extractPermissionsFromToken(String token) {
+        Set<String> permissions = new HashSet<>();
+        try {
+            Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+
+            Claims claims = Jwts.parser()
+                    .setSigningKey(key)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String roles = (String) claims.get("roles");
+            if (roles != null) {
+                String[] rolesArray = roles.split(",");
+                for (String role : rolesArray) {
+                    permissions.add(role.trim());
+                }
+            }
+        } catch (SignatureException e) {
+            System.out.println("Invalid token");
+        }
+        return permissions;
+    }
+
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        //创建一个 JwtGrantedAuthoritiesConverter 对象，并设置权限前缀为 "ROLE_"。
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-        //创建一个 JwtAuthenticationConverter 对象，并设置JWT授予的权限转换器。
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
     }
 }
+
+
+
+

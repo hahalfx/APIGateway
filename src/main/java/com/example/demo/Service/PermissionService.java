@@ -1,10 +1,15 @@
 package com.example.demo.Service;
 
+import com.example.demo.Feign.UserServiceClient;
+import com.example.demo.Feign.UserServiceClient.LoginRequest;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import java.security.Key;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -16,36 +21,45 @@ public class PermissionService {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private UserServiceClient userServiceClient;
 
-    private static final String USER_SERVICE_URL = "http://USER-SERVICE/api/user/permissions?userId=";
+    private static final String SECRET_KEY = "your-256-bit-secret";
+    private static final String PERMISSIONS_CACHE_PREFIX = "permissions:";
 
-    public void storeUserPermissions(String userId) {
-        Set<String> permissions = fetchUserPermissionsFromService(userId);
-        if (permissions != null) {
-            redisTemplate.opsForValue().set(userId, new HashSet<>(permissions), 1, TimeUnit.HOURS);
-        }
+    public String login(String userName, String userPhoneNumber) {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUserName(userName);
+        loginRequest.setUserPhoneNumber(userPhoneNumber);
+        // 调用 Feign 客户端登录并获取 token
+        String token = userServiceClient.login(loginRequest);
+        
+        // 从 token 中提取权限信息
+        String userId = getUserIdFromToken(token);
+        Set<String> permissions = extractPermissionsFromToken(token);
+
+        // 将权限信息存储到 Redis 中
+        storeUserPermissions(userId, permissions);
+        
+        return token;
     }
 
     public Set<String> getUserPermissions(String userId) {
-        // 尝试从Redis中获取用户权限
-        Object permissions = redisTemplate.opsForValue().get(userId);
+        // 尝试从 Redis 中获取用户权限
+        Object permissions = redisTemplate.opsForValue().get(PERMISSIONS_CACHE_PREFIX + userId);
         if (permissions instanceof Set<?>) {
             return castPermissionsToSet(permissions);
         }
 
-        // 如果Redis中没有权限信息，则从用户管理服务中获取
-        Set<String> fetchedPermissions = fetchUserPermissionsFromService(userId);
+        // 如果 Redis 中没有权限信息，则返回空集合
+        return new HashSet<>();
+    }
 
-        //将从用户管理服务中获取的权限信息存储到Redis中，并设置有效期
-        if (fetchedPermissions != null) {
-            redisTemplate.opsForValue().set(userId, new HashSet<>(fetchedPermissions), 1, TimeUnit.HOURS);
-        }
-        return fetchedPermissions != null ? fetchedPermissions : new HashSet<>();
+    public void storeUserPermissions(String userId, Set<String> permissions) {
+        // 将权限信息存储到 Redis 中，并设置有效期
+        redisTemplate.opsForValue().set(PERMISSIONS_CACHE_PREFIX + userId, new HashSet<>(permissions), 1, TimeUnit.HOURS);
     }
 
     @SuppressWarnings("unchecked")
-    //从Redis中获取的权限信息进行类型转换，确保它是一个Set<String>类型的集合。
     private Set<String> castPermissionsToSet(Object permissions) {
         if (permissions instanceof Set<?>) {
             Set<?> rawSet = (Set<?>) permissions;
@@ -60,11 +74,44 @@ public class PermissionService {
         return new HashSet<>();
     }
 
-    //从用户管理服务中获取用户权限信息
-    private Set<String> fetchUserPermissionsFromService(String userId) {
-        String url = USER_SERVICE_URL + userId;
-        return restTemplate.getForObject(url, Set.class);
+    public Set<String> extractPermissionsFromToken(String token) {
+        Set<String> permissions = new HashSet<>();
+        try {
+            Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+
+            Claims claims = Jwts.parser()
+                    .setSigningKey(key)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String roles = (String) claims.get("roles");
+            if (roles != null) {
+                String[] rolesArray = roles.split(",");
+                for (String role : rolesArray) {
+                    permissions.add(role.trim());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Invalid token");
+        }
+        return permissions;
+    }
+
+    private String getUserIdFromToken(String token) {
+        try {
+            Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+
+            Claims claims = Jwts.parser()
+                    .setSigningKey(key)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            return claims.getSubject();  // 假设用户 ID 存储在 JWT 的 subject 中
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
+
 
 
