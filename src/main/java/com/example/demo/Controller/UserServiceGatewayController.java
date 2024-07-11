@@ -17,35 +17,35 @@ import com.example.demo.Security.RequiredPermission;
 import com.example.demo.Service.UserserviceGatewayService;
 
 @RestController
-@RequestMapping("gateway")
+@RequestMapping("usermanage")
 public class UserServiceGatewayController {
 
     @Autowired
     private UserserviceGatewayService userservicegatewayService;
 
     //用户管理服务的功能接口
-    @PostMapping("user/add")
+    @PostMapping("/user/add")
     public boolean addUser(User user) {
         return userservicegatewayService.addUser(user);
     }
 
-    @PutMapping("user/update")
+    @PutMapping("/user/update")
     public boolean updateuSER(User user) {
         return userservicegatewayService.updateuSER(user);
     }
 
     @RequiredPermission("ADMIN")
-    @DeleteMapping("user/delete")
+    @DeleteMapping("/user/delete")
     public boolean deleteUser(String _userid) {
         return userservicegatewayService.deleteUser(_userid);
     }
 
-    @GetMapping("user/findByUserId")
+    @GetMapping("/user/findByUserId")
     public User findByUserID(@RequestParam(value="userId",required=true)String _userId)  {
         return userservicegatewayService.findByUserID(_userId);
     }
 
-    @GetMapping("user/findAll")
+    @GetMapping("/user/findAll")
     public List<UserWithBLOBs> findAll()   {
         return userservicegatewayService.findAll();
     }

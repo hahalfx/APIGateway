@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.Service.MessageserviceGatewayService;
 
 @RestController
-@RequestMapping("gateway")
+@RequestMapping("/message")
 public class MessageServiceGatewayController {
     @Autowired
     private MessageserviceGatewayService messageserviceGatewayService;

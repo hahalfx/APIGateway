@@ -16,6 +16,25 @@ spring:
             #RewritePath过滤器将请求路径从/api/auth/...重写为/...。
             #例如，请求/api/auth/login将被重写为/login，然后转发到用户管理微服务。
             - JwtTokenFilter
+  #使用eureka进行动态路由配置
+  application:
+    name: APIGateway
+    cloud:
+      gateway:
+        discovery:
+          locator:
+            enabled: true
+            lower-case-service-id: true
+  #使用OAuth2进行token安全配置
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/oauth2/default  # 根据您的OAuth2提供者配置
+  #配置redis
+  redis:
+    host: localhost
+    port: 6379
 
 #要使用eureka来发现微服务然后进行动态路由
 #eureka服务的服务端在<http://localhost:8761/eureka/>
@@ -25,38 +44,6 @@ eureka:
       defaultZone: <http://localhost:8761/eureka/>
   instance:
     prefer-ip-address: true
-
-#使用eureka进行动态路由配置
-spring:
-  application:
-    name: APIGateway
-  cloud:
-    gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-
-#使用OAuth2进行token安全配置
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/oauth2/default  # 根据您的OAuth2提供者配置
-
-#配置Redis
-spring:
-  redis:
-    host: localhost
-    port: 6379
-
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/oauth2/default
 
 # 配置CORS过滤器
 cors:

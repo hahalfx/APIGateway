@@ -39,50 +39,50 @@ public class SecurityConfig {
 
     private static final String SECRET_KEY = "your-256-bit-secret";
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(authorizeRequests ->
-                authorizeRequests
-                    .requestMatchers("/api/public/**").permitAll()
-                    .anyRequest().authenticated()
-            )
-            .addFilterBefore(new OncePerRequestFilter() {
-                @Override
-                protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-                    String authorizationHeader = request.getHeader("Authorization");
-                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                        String token = authorizationHeader.substring(7);
-                        Set<String> permissions = extractPermissionsFromToken(token);
-                        String requestUri = request.getRequestURI();
+    //@Bean
+    // public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    //     http
+    //         .authorizeHttpRequests(authorizeRequests ->
+    //             authorizeRequests
+    //                 .requestMatchers("/api/public/**").permitAll()
+    //                 .anyRequest().authenticated()
+    //         )
+    //         .addFilterBefore(new OncePerRequestFilter() {
+    //             @Override
+    //             protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    //                 String authorizationHeader = request.getHeader("Authorization");
+    //                 if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+    //                     String token = authorizationHeader.substring(7);
+    //                     Set<String> permissions = extractPermissionsFromToken(token);
+    //                     String requestUri = request.getRequestURI();
 
-                        // 获取当前处理的方法
-                        Object handler = request.getAttribute("org.springframework.web.servlet.HandlerMapping.bestMatchingHandler");
-                        if (handler instanceof HandlerMethod) {
-                            HandlerMethod handlerMethod = (HandlerMethod) handler;
-                            Method method = handlerMethod.getMethod();
+    //                     // 获取当前处理的方法
+    //                     Object handler = request.getAttribute("org.springframework.web.servlet.HandlerMapping.bestMatchingHandler");
+    //                     if (handler instanceof HandlerMethod) {
+    //                         HandlerMethod handlerMethod = (HandlerMethod) handler;
+    //                         Method method = handlerMethod.getMethod();
 
-                            // 检查方法上是否有 RequiredPermission 注解
-                            if (method.isAnnotationPresent(RequiredPermission.class)) {
-                                RequiredPermission requiredPermission = method.getAnnotation(RequiredPermission.class);
-                                String requiredPermissionValue = requiredPermission.value();
+    //                         // 检查方法上是否有 RequiredPermission 注解
+    //                         if (method.isAnnotationPresent(RequiredPermission.class)) {
+    //                             RequiredPermission requiredPermission = method.getAnnotation(RequiredPermission.class);
+    //                             String requiredPermissionValue = requiredPermission.value();
                                 
-                                // 验证用户是否拥有所需的权限
-                                if (!permissions.contains(requiredPermissionValue)) {
-                                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    filterChain.doFilter(request, response);
-                }
-            }, UsernamePasswordAuthenticationFilter.class)
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
-        return http.build();
-    }
+    //                             // 验证用户是否拥有所需的权限
+    //                             if (!permissions.contains(requiredPermissionValue)) {
+    //                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+    //                                 return;
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //                 filterChain.doFilter(request, response);
+    //             }
+    //         }, UsernamePasswordAuthenticationFilter.class)
+    //         .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+    //     return http.build();
+    // }
 
-    private Set<String> extractPermissionsFromToken(String token) {
+    public Set<String> extractPermissionsFromToken(String token) {
         Set<String> permissions = new HashSet<>();
         try {
             Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
